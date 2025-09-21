@@ -15,11 +15,15 @@ def main():
                 user = input(">_ ")
                 if user == "help" or user == "h":
                     all_commands()
-                elif user.split()[0] == "passadd" and "-cred" in user.split() and "-of" in user.split(): 
+                elif user.split()[0] == "passadd" and "-cred" in user.split() and "-of" in user.split():
+                    handlers.handle_commands(usercmd=user)
+                elif user.split()[0] == "passup" and "-new" in user.split() and "-of" in user.split():
+                    handlers.handle_commands(usercmd=user)
+                elif user.split()[0] == "passrm" and "-of" in user.split():
                     handlers.handle_commands(usercmd=user)
                 elif user == "passwds":
                     handlers.handle_commands(usercmd=user)
-                elif user.split()[0] == "passwd" and "-platform" in user.split():
+                elif user.split()[0] == "passwd" and user.split()[1] == "-of":
                     handlers.handle_commands(usercmd=user)
                 elif user == "q" or user == "exit" or user == "quit":
                     console.print("[bold italic]see ya![/bold italic]")

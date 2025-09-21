@@ -7,7 +7,7 @@ load_dotenv()
 console = Console()
 
 
-def display_specific_credential(platform_name: str):
+def del_credential(platform_name: str):
     """display all credentials 
     """
     dbname = os.getenv('DBNAME')
@@ -18,18 +18,18 @@ def display_specific_credential(platform_name: str):
     try:
         with Operation(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
             cur.execute(
-                "SELECT * FROM public.allpasswds WHERE platform = %s", (platform_name,))
-            
+                "DELETE FROM public.allpasswds WHERE platform = %s RETURNING id", (platform_name,))
+
             result = cur.fetchone()
-            if not result: # If data does not exist 
-                console.print(f"[red]There is no password detected in database with platform name[/red] '{platform_name}'\n")
+            if not result:  # If data does not exist
+                console.print(
+                    f"[red]There is no password detected in database with platform name[/red] '{platform_name}'\n")
                 return
-            
-            console.print(f"""
-[bold]id:[/bold] {result[0]}
-[bold]platform:[/bold] {result[1]}
-[bold]password:[/bold] [cyan]{result[2]}[/cyan]
-                          """)
+
+            console.print(
+                f"[bold cyan]Password deletion for platform[/bold cyan] '{platform_name}'")
+            console.print(
+                f"[bold blue]Password of[/bold blue] '{platform_name}' [bold blue]has been successfully deleted![/bold blue]")
             print()
     except Exception:
         console.print("""
