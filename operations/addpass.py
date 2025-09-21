@@ -7,7 +7,7 @@ load_dotenv()
 console = Console()
 
 
-def add_passwd(platform_name: str, passwd: str):
+def add_credential(platform_name: str, passwd: str):
     """add credentials (passwords)
 
     Args:
@@ -25,12 +25,11 @@ def add_passwd(platform_name: str, passwd: str):
                         (platform_name, passwd,))
             console.print(
                 f"[bold green]Successfully added password for {platform_name}![/bold green]\n")
-    except Exception as e:
-
-        console.print(e)
+    except Exception:
         console.print("""
 Failed to add your credentials in database, it may be cause by following reasons:
 1. You did not created table in your database.
-2. You did not added specific columns. (Columns must be like that -> | id | platform_name | passwd | with same names and same number of columns, no additional column required)
-3. Wrong command syntax.\n
+2. PostgreSQL service is not running.
+3. You did not added specific columns. (Columns must be like that -> | id | platform_name | passwd | with same names and same number of columns, no additional column required)
+4. Wrong command syntax.\n
                       """)
