@@ -1,10 +1,12 @@
 from rich.console import Console
 from rich.prompt import Prompt
-from dotenv import load_dotenv
+from dotenv import load_dotenv, dotenv_values
 from operations import (
     addpass,
     seeallpasswds,
-    see_specific_pass
+    see_specific_pass,
+    delpass,
+    updatepass
 )
 import psycopg2
 import random
@@ -56,7 +58,7 @@ class Connectdb:
             return
         except Exception as e:
             console.print(
-                f"[bold red]Database connection failed![/bold red]\nReason: {e}")
+                f"\n[bold red]Database connection failed![/bold red]\nReason: {e}")
 
     def pass_db_credentials(self):
         return self.db_creds
@@ -83,7 +85,7 @@ def create_env(DB: str, HOST: str, USER: str, PASS: str, PORT: str):
         for line in file_blueprint:
             file.writelines(f"{line}\n")
     console.print(
-        "\n✅ Databased connected and all credentials for database connection has been successfully saved!\n", style="bold green")
+        "\n✅ Database connected and all credentials for database connection has been successfully saved!\n", style="bold green")
 
 
 # Main handler to handle all commands
@@ -94,14 +96,14 @@ def check_db():
             for _ in range(3):
                 time.sleep(0.5)
 
-        # check if .env already exist or not if not then create first one
+        # check if .env already exist or not if not then create first
         if os.path.exists("./.env"):
             with open("./.env", "r") as file:
                 console.print(
-                    f"\n{random.choice(success_messages)}\n", style="bold green")
+                    f"\n{random.choice(success_messages)}", style="bold green")
             return True
         else:
-            console.print("[bold yellow]Database is not connected and Database Credentials file '.env' is missing, please specify credentials to connect database and save Database Credentials to a file:[/bold yellow]\n\n")
+            console.print("\n[bold yellow]Database is not connected and Database Credentials file '.env' is missing, please specify credentials to connect database and save Database Credentials to a file:[/bold yellow]\n\n")
 
             dbname = Prompt.ask(
                 "Enter your [cyan]postgres[/cyan] [bold]database name[/bold]: ")
@@ -119,43 +121,70 @@ def check_db():
                        PASS=dbpassword, PORT=port)
             return True
 
-    except Exception as e:
-        console.print(e)
-        console.print("\nOops! Something went wrong, please try again.\n")
+    except Exception:
         return False
 
 
-# Handle 'passadd' command
+# Handle 'passadd' command to add credentials in database
 def passadd_handler(command: list[str]):
-    console.print(f"Password: {command[2]}")
-    console.print(f"For: {command[4]}\n")
+    print(f"Password: {command[2]}")
+    print(f"For: {command[4]}\n")
     try:
         password = command[2]
         platform = command[4]
-        addpass.add_passwd(platform, password)
+        addpass.add_credential(platform, password)
     except Exception as e:
         console.print(e)
         return
 
-# Handle 'passwsds' command
+# Handle 'passwsds' command to display all credentials
 
 
 def passwds_cmd_handler():
     try:
-        seeallpasswds.display_credentials()
+        config = dotenv_values(".env")
+        dbname = config.get('DBNAME')
+        host = config.get('HOST')
+        user = config.get('USER')
+        password = config.get('PASSWORD')
+        port = config.get('PORT')
+        seeallpasswds.display_credentials(dbname, host, user, password, port)
     except Exception as e:
         console.print(e)
+        return
 
 
-# Handle 'passwsd' command
+# Handle 'passwsd' command to display specific credential
 
 
 def passwd_cmd_handler(command: list[str]):
     try:
-        console.print(f"Password of {command[2]}\n")
         see_specific_pass.display_specific_credential(command[2])
     except Exception as e:
         console.print(e)
+        return
+
+
+# Handle 'passrm' command to remove or delete credentials
+
+
+def passrm_cmd_handler(command: list[str]):
+    try:
+        delpass.del_credential(command[2])
+    except Exception as e:
+        console.print(e)
+        return
+
+
+# Handle 'passup' command to update credentials
+
+
+def passup_cmd_handler(command: list[str]):
+    try:
+        updatepass.update_credential(command[4], command[2])
+    except Exception as e:
+        console.print(e)
+        return
 
 # Handle all commands
 
@@ -168,7 +197,11 @@ def handle_commands(usercmd: str):
                 passadd_handler(command=usercmd.split())
             elif usercmd.split()[0] == "passwds":
                 passwds_cmd_handler()
+            elif usercmd.split()[0] == "passrm":
+                passrm_cmd_handler(command=usercmd.split())
+            elif usercmd.split()[0] == "passup":
+                passup_cmd_handler(command=usercmd.split())
             elif usercmd.split()[0] == "passwd":
-                passwd_cmd_handler(command=usercmd)
+                passwd_cmd_handler(command=usercmd.split())
     except Exception as e:
         console.print(e)
