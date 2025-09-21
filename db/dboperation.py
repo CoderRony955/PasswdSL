@@ -1,6 +1,5 @@
 from rich.console import Console
 import psycopg2
-import time
 
 console = Console()
 
@@ -14,7 +13,6 @@ class Operation:
         self.port = port
         self.conn = None
         self.cur = None
-
 
     def __enter__(self):
         try:
@@ -31,7 +29,6 @@ class Operation:
             print(e)
             console.print(
                 "[bold red]Failed to connect Database![/bold red]")
-            
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.conn:
@@ -40,10 +37,3 @@ class Operation:
             else:
                 self.conn.commit()
             self.conn.close()
-
-    # try:
-    #     with ConnectDb("mypasswds", "localhost", "postgres", "raunaksh955", "5432") as cur:
-    #         # Example of how to use the cursor
-    #         cur.execute("DELETE FROM public.allpasswds WHERE id = 1")
-    # except Exception as e:
-    #     console.print(f"[bold red]Something went wrong: {e}[/bold red]")
