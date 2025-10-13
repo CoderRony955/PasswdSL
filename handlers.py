@@ -81,7 +81,7 @@ def create_env(DB: str, HOST: str, USER: str, PASS: str, PORT: str):
     file_blueprint = [f'DBNAME={conndb.pass_db_credentials()[0]}', f'HOST={conndb.pass_db_credentials()[1]}',
                       f'USER={conndb.pass_db_credentials()[2]}', f'PASSWORD={conndb.pass_db_credentials()[3]}', f'PORT={conndb.pass_db_credentials()[4]}']
 
-    with open("./.env", "w") as file:
+    with open(".passwdsl.env", "w") as file:
         for line in file_blueprint:
             file.writelines(f"{line}\n")
     console.print(
@@ -97,8 +97,8 @@ def check_db():
                 time.sleep(0.5)
 
         # check if .env already exist or not if not then create first
-        if os.path.exists("./.env"):
-            with open("./.env", "r") as file:
+        if os.path.exists(".passwdsl.env"):
+            with open(".passwdsl.env", "r") as file:
                 console.print(
                     f"\n{random.choice(success_messages)}", style="bold green")
             return True
@@ -191,17 +191,22 @@ def passup_cmd_handler(command: list[str]):
 
 def handle_commands(usercmd: str):
     try:
-        # to handle 'adding password' operations
+        # to handle CRUD operations
         if check_db():
             if usercmd.split()[0] == "passadd":
                 passadd_handler(command=usercmd.split())
+
             elif usercmd.split()[0] == "passwds":
                 passwds_cmd_handler()
+
             elif usercmd.split()[0] == "passrm":
                 passrm_cmd_handler(command=usercmd.split())
+
             elif usercmd.split()[0] == "passup":
                 passup_cmd_handler(command=usercmd.split())
+
             elif usercmd.split()[0] == "passwd":
                 passwd_cmd_handler(command=usercmd.split())
+
     except Exception as e:
         console.print(e)

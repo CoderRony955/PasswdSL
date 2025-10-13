@@ -3,7 +3,7 @@ from rich.console import Console
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(dotenv_path=".passwdsl.env")
 console = Console()
 
 
