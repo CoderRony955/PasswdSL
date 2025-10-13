@@ -17,17 +17,17 @@ Before you begin, ensure you have the following installed on your system:
 
 ## Installation and Setup (Windows)
 
-1.  **Download the Build:** Download the latest version of PasswdSL for **Windows** by clicking [here](https://drive.google.com/uc?export=download&id=1AVYaXIdgnKf5nHXaeZAHtyoJ91gS6qa8).
+1.  **Download the Build:** Download the latest version of PasswdSL for **Windows** by clicking [here](https://github.com/CoderRony955/PasswdSL/releases/download/v1.0.1/passwdsl.zip).
 > **Note:** To use it on Linux and Mac you need to build it from the source code, if you don't know how to do it, then click here to [learn about it](https://hive.blog/python/@makerhacks/how-to-compile-your-python-apps-to-exe-and-maclinux-executables#:~:text=Here%20is%20how%20to%20compile%20your%20Python%20app,additional%20data%20files.%20You%27ll%20need%20Python%203.7%2B%20installed.)
    
-2. Unzip the downloaded folder.
-3.  **Set Environment Variable:**
+1. Unzip the downloaded folder.
+2.  **Set Environment Variable:**
     *   Copy the path to the unzipped `passwdsl` folder.
     *   Open the "Environment Variables" settings in Windows.
     *   Under "System variables," select the `Path` variable and click "Edit."
     *   Click "New" and paste the copied path to the `passwdsl` folder.
     *   Click "OK" to save the changes.
-4.  **Run PasswdSL:**
+3.  **Run PasswdSL:**
     *   Open a new terminal or command prompt.
     *   Type `passwdsl` and press Enter.
 
@@ -73,6 +73,8 @@ Here are some images to guide you through the database setup process in PostgreS
 
 **Create Table:**
 ![Create Table](dbsetup/create_table.png)
+
+> **Note:** if you entered wrong credentials for your local postgres databse connection then no need to worry, you just need to go `C:/Users/<name>` and find for `.passwdsl.env` file just delete it and run `passwdsl` again in your terminal and enter your right database connection credentials.
 
 ## Usage
 
