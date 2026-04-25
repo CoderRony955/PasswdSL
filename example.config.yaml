@@ -1,0 +1,13 @@
+passwdsl:
+  database:
+    columns:
+    - id
+    - platform
+    - passwd
+    dbname: null
+    host: null
+    password: null
+    port: null
+    table: null
+    user: null
+  login_pass: null
