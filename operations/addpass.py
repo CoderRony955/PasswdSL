@@ -1,35 +1,86 @@
-from db.dboperation import Operation
+from db.database import Database
 from rich.console import Console
-from dotenv import load_dotenv
-import os
+from rich.table import Table
+from psycopg2 import sql
+from .connection import DataBaseConfig
+from config import read
 
-load_dotenv(dotenv_path=".passwdsl.env")
 console = Console()
 
 
-def add_credential(platform_name: str, passwd: str):
+def add_credential(platform_name: str, password: str):
     """add credentials (passwords)
 
     Args:
         platform_name (str, required): platform name of that password that you are adding.
-        passwd (str, required): password. 
+        password (str, required): password. 
     """
-    dbname = os.getenv('DBNAME')
-    host = os.getenv('HOST')
-    port = os.getenv('PORT')
-    user = os.getenv('USER')
-    password = os.getenv('PASSWORD')
+    platform_name = platform_name.strip()
+    password = password.strip()
+
+    if not platform_name or not password:
+        console.print("[bold red]Platform and password both are required.[/bold red]\n")
+        return
+
+    config = read()
+    dbconfig = config["passwdsl"]["database"]
+
+    dbname = dbconfig["dbname"]
+    host = dbconfig["host"]
+    port = dbconfig["port"]
+    user = dbconfig["user"]
+    dbpassword = dbconfig["password"]
+    table = dbconfig["table"]
+    id_col, platform_col, password_col = dbconfig["columns"]
+
+    if not table:
+        console.print("[bold red]Table name is missing in config.yaml.[/bold red]\n")
+        return
+
+    conn_check = DataBaseConfig(dbname=dbname, host=host, user=user, password=dbpassword, port=port).check_db()
+    if isinstance(conn_check, tuple):
+        console.print(f"[bold red]Database check failed: {conn_check[1]}[/bold red]\n")
+        return
+
     try:
-        with Operation(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
-            cur.execute("INSERT INTO public.allpasswds (platform, passwd) VALUES (%s, %s) RETURNING id",
-                        (platform_name, passwd,))
-            console.print(
-                f"[bold green]Successfully added password for {platform_name}![/bold green]\n")
-    except Exception:
-        console.print("""
-Failed to add your credentials in database, it may be cause by following reasons:
-1. You did not created table in your database.
-2. PostgreSQL service is not running.
-3. You did not added specific columns. (Columns must be like that -> | id | platform_name | passwd | with same names and same number of columns, no additional column required)
-4. Wrong command syntax.\n
-                      """)
+        with Database(dbname=dbname, host=host, user=user, password=dbpassword, port=port) as cur:
+            cur.execute(
+                sql.SQL("SELECT {} FROM public.{} WHERE {} = %s").format(
+                    sql.Identifier(id_col),
+                    sql.Identifier(table),
+                    sql.Identifier(platform_col)
+                ),
+                (platform_name,)
+            )
+            existing = cur.fetchone()
+            if existing:
+                console.print(
+                    f"[bold yellow]Credential already exists for[/bold yellow] [cyan]{platform_name}[/cyan] "
+                    f"(id: {existing[0]}). Use [bold]passup[/bold] to update it.\n"
+                )
+                return
+
+            cur.execute(
+                sql.SQL("INSERT INTO public.{} ({}, {}) VALUES (%s, %s) RETURNING {}, {}, {}").format(
+                    sql.Identifier(table),
+                    sql.Identifier(platform_col),
+                    sql.Identifier(password_col),
+                    sql.Identifier(id_col),
+                    sql.Identifier(platform_col),
+                    sql.Identifier(password_col)
+                ),
+                (platform_name, password)
+            )
+            created = cur.fetchone()
+
+            result_table = Table(title="Credential Added", show_header=True, show_lines=True)
+            result_table.add_column("Id")
+            result_table.add_column("Platform")
+            result_table.add_column("Password")
+            result_table.add_row(str(created[0]), f"[cyan]{created[1]}[/cyan]", f"[bold]{created[2]}[/bold]")
+
+            print()
+            console.print(result_table)
+            print()
+    except Exception as e:
+        console.print(f"[bold red]Failed to add credential.[/bold red] {e}\n")

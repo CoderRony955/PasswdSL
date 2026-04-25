@@ -1,5 +1,8 @@
-# test files & folders
+# snippets test files & folders
 test/
+
+# configuration file
+config.yaml
 
 # Python-generated files
 __pycache__/

@@ -1,40 +1,71 @@
-from db.dboperation import Operation
+from db.database import Database
 from rich.console import Console
-from dotenv import load_dotenv
-import os
+from rich.table import Table
+from psycopg2 import sql
+from .connection import DataBaseConfig
+from config import read
 
-load_dotenv(dotenv_path=".passwdsl.env")
 console = Console()
 
 
-def update_credential(platform_name: str, passwd: str):
+def update_credential(platform_name: str, password: str):
     """display all credentials 
     """
-    dbname = os.getenv('DBNAME')
-    host = os.getenv('HOST')
-    port = os.getenv('PORT')
-    user = os.getenv('USER')
-    password = os.getenv('PASSWORD')
+    platform_name = platform_name.strip()
+    password = password.strip()
+
+    if not platform_name or not password:
+        console.print("[bold red]Platform and new password both are required.[/bold red]\n")
+        return
+
+    config = read()
+    dbconfig = config["passwdsl"]["database"]
+
+    dbname = dbconfig["dbname"]
+    host = dbconfig["host"]
+    port = dbconfig["port"]
+    user = dbconfig["user"]
+    dbpassword = dbconfig["password"]
+    table = dbconfig["table"]
+    id_col, platform_col, password_col = dbconfig["columns"]
+
+    if not table:
+        console.print("[bold red]Table name is missing in config.yaml.[/bold red]\n")
+        return
+
+    conn_check = DataBaseConfig(dbname=dbname, host=host, user=user, password=dbpassword, port=port).check_db()
+    if isinstance(conn_check, tuple):
+        console.print(f"[bold red]Database check failed: {conn_check[1]}[/bold red]\n")
+        return
+
     try:
-        with Operation(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
+        with Database(dbname=dbname, host=host, user=user, password=dbpassword, port=port) as cur:
             cur.execute(
-                "UPDATE public.allpasswds SET passwd = %s WHERE platform = %s RETURNING id", (passwd, platform_name,))
+                sql.SQL("UPDATE public.{} SET {} = %s WHERE {} = %s RETURNING {}, {}, {}").format(
+                    sql.Identifier(table),
+                    sql.Identifier(password_col),
+                    sql.Identifier(platform_col),
+                    sql.Identifier(id_col),
+                    sql.Identifier(platform_col),
+                    sql.Identifier(password_col)
+                ),
+                (password, platform_name)
+            )
 
             result = cur.fetchone()
             if not result:  # If data does not exist
                 console.print(
-                    f"[red]There is no password detected in database with platform name[/red] '{platform_name}'\n")
+                    f"[bold yellow]No credential found for[/bold yellow] [cyan]{platform_name}[/cyan].\n")
                 return
 
-            console.print(
-                f"[bold cyan]Password updation for platform[/bold cyan] '{platform_name}'")
-            console.print(
-                f"[bold blue]Password of[/bold blue] '{platform_name}' [bold blue]has been successfully updated![/bold blue]")
+            result_table = Table(title="Credential Updated", show_header=True, show_lines=True)
+            result_table.add_column("Id")
+            result_table.add_column("Platform")
+            result_table.add_column("Password")
+            result_table.add_row(str(result[0]), f"[cyan]{result[1]}[/cyan]", f"[bold]{result[2]}[/bold]")
+
             print()
-    except Exception:
-        console.print("""
-Failed to display your credentials, it may be cause by following reasons:
-1. You did not created table in your database.
-2. PostgreSQL service is not running.
-3. Database does not exist.\n
-""")
+            console.print(result_table)
+            print()
+    except Exception as e:
+        console.print(f"[bold red]Failed to update credential.[/bold red] {e}\n")

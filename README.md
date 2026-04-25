@@ -1,145 +1,258 @@
-# PasswdSL: Your Personal Command-Line Password Manager
+# PasswdSL 🔐
 
-PasswdSL is a console-based password manager that allows you to securely store and manage your credentials in a local PostgreSQL database. It provides a simple and efficient way to handle your passwords directly from the command line.
+PasswdSL is a local command-line password manager written in Python. It opens an interactive shell where you can add, view, update, and delete credentials stored in your own PostgreSQL database.
 
-## Features
+It is designed as a personal, self-hosted utility, not a cloud service.
 
-- **Secure Local Storage:** All your passwords are stored in a local PostgreSQL database, ensuring that your data remains under your control.
-- **Full CRUD Operations:** Create, Read, Update, and Delete your passwords with simple commands.
-- **Command-Line Interface:** A straightforward and easy-to-use command-line interface for all operations.
-- **Self-Hosted:** No external servers are involved. Your data stays with you.
+## What This Tool Does
 
-## Prerequisites
+- Stores credentials in PostgreSQL that you control
+- Provides a terminal command interface with Rich tables
+- Uses a local login password before opening the command shell
+- Supports full CRUD workflow for credential records
+- Loads database/table/column settings from `config.yaml`
 
-Before you begin, ensure you have the following installed on your system:
+## How It Works
 
-- **PostgreSQL:** You must have PostgreSQL installed and running on your system. You can download it from the official PostgreSQL website: [https://www.postgresql.org/download/](https://www.postgresql.org/download/)
+1. `passwdsl.py` starts the app and shows intro text.
+2. `onstart/auth.py` handles login password setup and verification.
+3. `operations/connection.py` validates database connectivity and can prompt for missing DB config fields.
+4. `command_handlers.py` parses commands and calls operation modules.
+5. `operations/*.py` runs SQL operations using `db/database.py`.
 
-## Installation and Setup (Windows)
+## Core Features
 
-1.  **Download the Build:** Download the latest version of PasswdSL for **Windows** by clicking [here](https://github.com/CoderRony955/PasswdSL/releases/download/v1.0.1/passwdsl.zip).
-> **Note:** To use it on Linux and Mac you need to build it from the source code, if you don't know how to do it, then click here to [learn about it](https://hive.blog/python/@makerhacks/how-to-compile-your-python-apps-to-exe-and-maclinux-executables#:~:text=Here%20is%20how%20to%20compile%20your%20Python%20app,additional%20data%20files.%20You%27ll%20need%20Python%203.7%2B%20installed.)
-   
-1. Unzip the downloaded folder.
-2.  **Set Environment Variable:**
-    *   Copy the path to the unzipped `passwdsl` folder.
-    *   Open the "Environment Variables" settings in Windows.
-    *   Under "System variables," select the `Path` variable and click "Edit."
-    *   Click "New" and paste the copied path to the `passwdsl` folder.
-    *   Click "OK" to save the changes.
-3.  **Run PasswdSL:**
-    *   Open a new terminal or command prompt.
-    *   Type `passwdsl` and press Enter.
+- Add credential: `passadd`
+- List all credentials: `passwds`
+- View one credential: `passwd`
+- Update credential: `passup`
+- Delete credential: `passrm`
+- Help command: `help` or `h`
+- Exit commands: `q`, `exit`, `quit`
 
-## Database Setup
+## Tech Stack
 
-The first time you run a command, PasswdSL will prompt you to set up your database connection.
+- Python `>=3.13`
+- PostgreSQL
+- `psycopg2`
+- `rich`
+- `pyyaml`
+- `maskpass`
 
-1.  **Database Name:** When prompted, enter the database name. It is crucial to use `mypasswds` as the database name.
-2.  **Table Name:** The table where your passwords will be stored must be named `allpasswds`.
-3.  **Table Columns:** The `allpasswds` table must have the following three columns with the exact same names:
-    *   `id` (bigserial, PRIMARY KEY)
-    *   `platform` (text, NOT NULL)
-    *   `passwd` (text, NOT NULL)
-4. Restart terminal and type `passwdsl` to start using PasswdSL.
+## Project Structure
 
-You can use the following SQL script to create the table:
+- `passwdsl.py`: entrypoint and REPL loop
+- `command_handlers.py`: command parsing and dispatch
+- `config.py`: reads `config.yaml` values into runtime variables
+- `operations/`: add/list/view/update/delete and DB connection checks
+- `db/database.py`: context-managed psycopg2 connection and cursor
+- `onstart/`: intro, help table, auth/login flow
+- `sql_queries/`: example SQL scripts
+- `example.config.yaml`: starter configuration template
 
-```sql
-CREATE TABLE public.allpasswds
-(
-    id bigserial NOT NULL,
-    platform text NOT NULL,
-    passwd text NOT NULL,
-    PRIMARY KEY (id)
-);
+## Security Notes
 
-ALTER TABLE IF EXISTS public.allpasswds
-    OWNER to postgres;
+- Credentials are currently stored in plain text in PostgreSQL.
+- App login password (`login_pass`) is stored in plain text in `config.yaml`.
+- This project is suitable for local/personal usage and learning, not hardened production security.
 
-COMMENT ON TABLE public.allpasswds
-    IS 'all passwords';
+## Installation and Setup (All OS)
+
+### 1) Install Python and PostgreSQL
+
+Use the commands below or install manually from official installers.
+
+### Windows
+
+1. Install Python 3.13+ from [python.org](https://www.python.org/) and enable "Add Python to PATH".
+2. Install PostgreSQL from [postgresql.org](https://www.postgresql.org/download/windows/).
+3. Verify:
+
+```powershell
+python --version
+psql --version
 ```
 
-### Visual Guide
+### macOS
 
-Here are some images to guide you through the database setup process in PostgreSQL:
+Install via Homebrew:
 
-**Create Server:**
-![Create Server](dbsetup/createserver.png)
+```bash
+brew install python@3.13
+brew install postgresql
+brew services start postgresql
+python3 --version
+psql --version
+```
 
-**Register Server:**
-![Register Server](dbsetup/register_server.png)
+### Linux (Ubuntu/Debian)
 
-**Create Table:**
-![Create Table](dbsetup/create_table.png)
+```bash
+sudo apt update
+sudo apt install -y python3 python3-venv python3-pip postgresql postgresql-contrib
+python3 --version
+psql --version
+```
 
-> **Note:** if you entered wrong credentials for your local postgres databse connection then no need to worry, you just need to go `C:/Users/<name>` and find for `.passwdsl.env` file just delete it and run `passwdsl` again in your terminal and enter your right database connection credentials.
+For Fedora:
+
+```bash
+sudo dnf install -y python3 python3-pip postgresql postgresql-server
+```
+
+For Arch:
+
+```bash
+sudo pacman -S --needed python python-pip postgresql
+```
+
+### 2) Clone the Repository
+
+```bash
+git clone https://github.com/CoderRony955/PasswdSL.git
+cd PasswdSL
+```
+
+### 3) Create and Activate a Virtual Environment
+
+### Windows (PowerShell)
+
+```powershell
+python -m venv .venv
+.venv\Scripts\Activate.ps1
+```
+
+### macOS/Linux
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 4) Install Python Dependencies
+
+Using pip:
+
+```bash
+pip install -r requirements.txt
+```
+
+Or using uv:
+
+```bash
+uv sync
+```
+
+### 5) Create `config.yaml`
+
+Copy from template:
+
+### Windows
+
+```powershell
+Copy-Item example.config.yaml config.yaml
+```
+
+### macOS/Linux
+
+```bash
+cp example.config.yaml config.yaml
+```
+
+Template:
+
+```yaml
+passwdsl:
+  database:
+    columns:
+    - id
+    - platform
+    - passwd
+    dbname: null
+    host: null
+    password: null
+    port: null
+    table: null
+    user: null
+  login_pass: null
+```
+
+### 6) Create Database and Table
+
+Expected defaults used in examples:
+
+- Database: `mypasswds`
+- Table: `allpasswds`
+- Columns: `id`, `platform`, `passwd`
+
+Use `psql`:
+
+```sql
+CREATE DATABASE mypasswds;
+\c mypasswds
+
+CREATE TABLE public.allpasswds
+(
+    id bigserial PRIMARY KEY,
+    platform text NOT NULL,
+    passwd text NOT NULL
+);
+```
+
+You can also use the provided SQL files:
+
+- `sql_queries/createdb.sql`
+- `sql_queries/createtable.sql`
+
+### 7) Run PasswdSL
+
+```bash
+python passwdsl.py
+```
+
+First startup behavior:
+
+1. If `login_pass` is `null`, app asks you to create a login password.
+2. If DB credentials are missing, app prompts and writes them to `config.yaml`.
+3. If table is missing and you run `passwds`, app asks for table name and stores it.
 
 ## Usage
 
-Once the setup is complete, you can start using PasswdSL with the following commands:
+Command list:
 
-### `passwds`
+- `help` or `h`
+- `passwds`
+- `passwd -of <platform>`
+- `passadd -cred <password> -of <platform>`
+- `passup -new <password> -of <platform>`
+- `passrm -of <platform>`
+- `q`, `exit`, `quit`
 
-See all your credentials.
- 
-```
+Examples:
+
+```text
+>_ passadd -cred MyPass123 -of github
 >_ passwds
+>_ passwd -of github
+>_ passup -new MyNewPass456 -of github
+>_ passrm -of github
 ```
 
-### `passwd -of 'platform_name'`
+## Troubleshooting
 
-See the password for a specific platform.
+- `config.yaml` missing: copy from `example.config.yaml`.
+- DB connection error: verify `dbname`, `host`, `port`, `user`, `password`.
+- Reset app login: set `passwdsl.login_pass` to `null`.
+- Reset DB prompts: set DB fields under `passwdsl.database` to `null`.
+- Table missing errors: create table or set correct table name in `config.yaml`.
 
-```
->_ passwd -of gmail
-```
+## Visual Setup (pgAdmin)
 
-### `passadd -cred 'password' -of 'platform_name'`
-
-Add a new password for a platform.
-
-```
->_ passadd -cred MyNewPassword123 -of github
-```
-
-### `passrm -of 'platform_name'`
-
-Remove a password for a specific platform.
-
-```
->_ passrm -of facebook
-```
-
-### `passup -new 'password' -of 'platform_name'`
-
-Update the password for a specific platform.
-
-```
->_ passup -new MyUpdatedPassword456 -of twitter
-```
-
-### `help` or `h`
-
-Display all available commands.
-
-```
->_ help
-```
-
-### `q`, `exit`, or `quit`
-
-Exit the PasswdSL console.
-
-```
->_ q 
-```
-
-## Contributing
-
-Contributions are welcome! If you have any ideas, suggestions, or bug reports, please open an issue or submit a pull request.
+![Create Server](dbsetup/createserver.png)
+![Register Server](dbsetup/register_server.png)
+![Create Table](dbsetup/create_table.png)
 
 ## License
 
-This project is licensed under the MIT License. See the [LICENSE](https://github.com/CoderRony955/PasswdSL/blob/main/LICENSE) file for details.
+This project is licensed under the [MIT License](https://github.com/CoderRony955/PasswdSL/blob/main/LICENSE). See the LICENSE file for details.
+

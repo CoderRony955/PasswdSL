@@ -8,7 +8,7 @@ from config import read
 console = Console()
 
 
-def display_specific_credential(platform_name: str):
+def del_credential(platform_name: str):
     """display all credentials 
     """
     platform_name = platform_name.strip()
@@ -39,22 +39,23 @@ def display_specific_credential(platform_name: str):
     try:
         with Database(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
             cur.execute(
-                sql.SQL("SELECT {}, {}, {} FROM public.{} WHERE {} = %s").format(
+                sql.SQL("DELETE FROM public.{} WHERE {} = %s RETURNING {}, {}, {}").format(
+                    sql.Identifier(table),
+                    sql.Identifier(platform_col),
                     sql.Identifier(id_col),
                     sql.Identifier(platform_col),
-                    sql.Identifier(password_col),
-                    sql.Identifier(table),
-                    sql.Identifier(platform_col)
+                    sql.Identifier(password_col)
                 ),
                 (platform_name,)
             )
-            
+
             result = cur.fetchone()
-            if not result: # If data does not exist 
-                console.print(f"[bold yellow]No credential found for[/bold yellow] [cyan]{platform_name}[/cyan].\n")
+            if not result:  # If data does not exist
+                console.print(
+                    f"[bold yellow]No credential found for[/bold yellow] [cyan]{platform_name}[/cyan].\n")
                 return
 
-            result_table = Table(title="Credential Details", show_header=True, show_lines=True)
+            result_table = Table(title="Credential Deleted", show_header=True, show_lines=True)
             result_table.add_column("Id")
             result_table.add_column("Platform")
             result_table.add_column("Password")
@@ -64,4 +65,4 @@ def display_specific_credential(platform_name: str):
             console.print(result_table)
             print()
     except Exception as e:
-        console.print(f"[bold red]Failed to display credential.[/bold red] {e}\n")
+        console.print(f"[bold red]Failed to delete credential.[/bold red] {e}\n")

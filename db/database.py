@@ -4,7 +4,7 @@ import psycopg2
 console = Console()
 
 
-class Operation:
+class Database:
     def __init__(self, dbname, host, user, password, port):
         self.dbname = dbname
         self.host = host
@@ -26,9 +26,8 @@ class Operation:
             self.cur = self.conn.cursor()
             return self.cur
         except Exception as e:
-            print(e)
             console.print(
-                "[bold red]Failed to connect Database![/bold red]")
+                f"[bold red]Failed to connect Database!{e}[/bold red]")
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.conn:
