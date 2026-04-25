@@ -6,7 +6,8 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "auto-py-to-exe>=2.47.0",
+    "maskpass>=0.3.7",
     "psycopg2>=2.9.10",
-    "python-dotenv>=1.1.1",
+    "pyyaml>=6.0.3",
     "rich>=14.1.0",
 ]

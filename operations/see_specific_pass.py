@@ -1,40 +1,67 @@
-from db.dboperation import Operation
+from db.database import Database
 from rich.console import Console
-from dotenv import load_dotenv
-import os
+from rich.table import Table
+from psycopg2 import sql
+from .connection import DataBaseConfig
+from config import read
 
-load_dotenv(dotenv_path=".passwdsl.env")
 console = Console()
 
 
 def display_specific_credential(platform_name: str):
     """display all credentials 
     """
-    dbname = os.getenv('DBNAME')
-    host = os.getenv('HOST')
-    port = os.getenv('PORT')
-    user = os.getenv('USER')
-    password = os.getenv('PASSWORD')
+    platform_name = platform_name.strip()
+    if not platform_name:
+        console.print("[bold red]Platform name is required.[/bold red]\n")
+        return
+
+    config = read()
+    dbconfig = config["passwdsl"]["database"]
+
+    dbname = dbconfig["dbname"]
+    host = dbconfig["host"]
+    port = dbconfig["port"]
+    user = dbconfig["user"]
+    password = dbconfig["password"]
+    table = dbconfig["table"]
+    id_col, platform_col, password_col = dbconfig["columns"]
+
+    if not table:
+        console.print("[bold red]Table name is missing in config.yaml.[/bold red]\n")
+        return
+
+    conn_check = DataBaseConfig(dbname=dbname, host=host, user=user, password=password, port=port).check_db()
+    if isinstance(conn_check, tuple):
+        console.print(f"[bold red]Database check failed: {conn_check[1]}[/bold red]\n")
+        return
+
     try:
-        with Operation(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
+        with Database(dbname=dbname, host=host, user=user, password=password, port=port) as cur:
             cur.execute(
-                "SELECT * FROM public.allpasswds WHERE platform = %s", (platform_name,))
+                sql.SQL("SELECT {}, {}, {} FROM public.{} WHERE {} = %s").format(
+                    sql.Identifier(id_col),
+                    sql.Identifier(platform_col),
+                    sql.Identifier(password_col),
+                    sql.Identifier(table),
+                    sql.Identifier(platform_col)
+                ),
+                (platform_name,)
+            )
             
             result = cur.fetchone()
             if not result: # If data does not exist 
-                console.print(f"[red]There is no password detected in database with platform name[/red] '{platform_name}'\n")
+                console.print(f"[bold yellow]No credential found for[/bold yellow] [cyan]{platform_name}[/cyan].\n")
                 return
-            
-            console.print(f"""
-[bold]id:[/bold] {result[0]}
-[bold]platform:[/bold] {result[1]}
-[bold]password:[/bold] [cyan]{result[2]}[/cyan]
-                          """)
+
+            result_table = Table(title="Credential Details", show_header=True, show_lines=True)
+            result_table.add_column("Id")
+            result_table.add_column("Platform")
+            result_table.add_column("Password")
+            result_table.add_row(str(result[0]), f"[cyan]{result[1]}[/cyan]", f"[bold]{result[2]}[/bold]")
+
             print()
-    except Exception:
-        console.print("""
-Failed to display your credentials, it may be cause by following reasons:
-1. You did not created table in your database.
-2. PostgreSQL service is not running.
-3. Database does not exist.\n
-""")
+            console.print(result_table)
+            print()
+    except Exception as e:
+        console.print(f"[bold red]Failed to display credential.[/bold red] {e}\n")

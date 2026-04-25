@@ -1,3 +1,4 @@
 psycopg2>=2.9.10
-python-dotenv>=1.1.1
 rich>=14.1.0
+pyyaml>=6.0.3
+maskpass>=0.3.7
